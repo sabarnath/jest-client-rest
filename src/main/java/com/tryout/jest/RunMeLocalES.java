@@ -538,7 +538,7 @@ public class RunMeLocalES {
     	IndicesExists indicesExists = new IndicesExists.Builder(DIARY_INDEX_NAME).build();
    	 JestResult result =  jestClient.execute(indicesExists);
         if (result != null && result.isSucceeded()) {
-            LOGGER.debug("Completed : {}. message {}. ", result.isSucceeded(), result.getJsonString());
+            System.out.println("Completed : {}. message {}. " +result.getJsonString());
         } else {
             System.err.println(result.getJsonString());
         }

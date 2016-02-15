@@ -18,17 +18,29 @@ import io.searchbox.params.Parameters;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.gson.Gson;
 import com.tryout.jest.domain.Note;
 
 public class RunMeLocalES {
@@ -36,7 +48,7 @@ public class RunMeLocalES {
     private static final String NOTES_TYPE_NAME = "notes";
     private static final String CHILE_NOTES_TYPE_NAME = "child_notes1";
     private static final String DIARY_INDEX_NAME = "test_diary";
-    private static final String[] indexNameandType = {"test_diary","notes_bulk"};
+    private static final String[] indexNameandType = {"test_diary","notes"};
     private static JestClient jestClient;
     
 
@@ -62,11 +74,14 @@ public class RunMeLocalES {
             	//RunMeLocalES.childMapping(jestClient);
                 //RunMeLocalES.subIndexSomeData(jestClient);
             	//RunMeLocalES.updateTestForUpdatedFieldsMap(jestClient);
+            	//RunMeLocalES.update();
+            	RunMeLocalES.updateWithTwoMaps();
+            	RunMeLocalES.getIndexDocById(jestClient);
             	//RunMeLocalES.bulkIndex(jestClient);
             	//RunMeLocalES.bulkIndexwithmymethod(jestClient);
             	//RunMeLocalES.delete(jestClient);
             	//RunMeLocalES.deleteTestIndexWithtype(jestClient);
-            	RunMeLocalES.isExistIndex(jestClient);
+            	//RunMeLocalES.isExistIndex(jestClient);
             } finally {
                 // shutdown client
                 jestClient.shutdownClient();
@@ -388,7 +403,7 @@ public class RunMeLocalES {
     }
     
 	private static void getIndexDocById(JestClient jestClient) throws IOException {
-    	Get get = new Get.Builder(DIARY_INDEX_NAME, "12345").type(NOTES_TYPE_NAME).build();
+    	Get get = new Get.Builder(DIARY_INDEX_NAME, "71fa9567-14b5-461d-9ef7-b1cbde1b877a").type(NOTES_TYPE_NAME).build();
 
     	JestResult result = jestClient.execute(get);
     	
@@ -576,11 +591,11 @@ public class RunMeLocalES {
     	data.put(   "audienceMatchType","MATCH_ANY_TERM");
     	data.put(   "publishToAll",false);
     	data.put(   "audienceCount",null);
-    	data.put(   "description","asf dr yreytry");
+    	data.put(   "description","my destion");
     	data.put(   "reasonForRequest","");
-    	data.put(   "favourite_ids","");
+    	data.put(   "favourite_ids","diff");
     	data.put(   "createdDate","2016-02-03T11:50:33");
-    	data.put(   "responseMatchedIds","");
+    	data.put(   "responseMatchedIds","1234");
     	data.put(   "status","DRAFT");
     	data.put(   "originalOpportunityId","");
     	data.put(   "explanation","");
@@ -622,7 +637,18 @@ public class RunMeLocalES {
     	source.put("payload", data);
 		return source;
 	}
-    
+	
+	private static Map<String, Object> staticTempMap() {
+        Map<String, Object> source = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put(   "name_value","My first value");
+        data.put(   "today",new Date());
+        data.put(   "age",78);
+        data.put(   "username","123456");
+        source.put("payload", data);
+        return source;
+    }
+	
     private static void subIndexSomeData(final JestClient jestClient)
             throws Exception {
     	Map<String, Object> source = new HashMap<String, Object>();
@@ -852,7 +878,160 @@ public class RunMeLocalES {
 		}
 	}
     
+	
+	 @SuppressWarnings("unchecked")
+    public static boolean update() {
+
+
+	        Map<String, Object> updateData = new HashMap<String, Object>();
+	        Map<String, Object> finalmap = new HashMap<String, Object>();
+	        boolean updateStatus = false;
+	        Map<String, Object> source = staticMapWithValue();
+	        //Map<String, Object> source =staticTempMap();
+	        System.out.println("source : "+ source.toString());
+	        try {
+
+	            Get get = new Get.Builder(indexNameandType[0],"71fa9567-14b5-461d-9ef7-b1cbde1b877a").type(indexNameandType[1]).build();
+	            JestResult getresult = jestClient.execute(get);
+	            if (getresult.isSucceeded()) {
+	                //System.out.println("result :"+getresult.getJsonString());
+	            }
+
+	          
+	            updateData = (Map<String, Object>) getresult.getValue("_source");
+	            System.out.println("updateData : "+ updateData.toString());
+	            /*ObjectMapper mapper = new ObjectMapper();
+	            Gson gson = new Gson(); 
+	            JsonNode tree1 = mapper.readTree(gson.toJson(updateData));
+	            JsonNode tree2 = mapper.readTree(gson.toJson(updateData));
+	            boolean areTheyEqual = tree1.equals(tree2);
+	            System.out.println("Compare result :"+areTheyEqual);*/
+	            
+	            
+	            //mergeJSONObjects(new JSONObject(updateData), new JSONObject(source));
+	            JSONObject target = deepMerge(new JSONObject(updateData), new JSONObject(source));
+	            System.out.println("deepMerge : "+target);
+	            
+	           /* HashMap<String,Object> result =
+	                    new ObjectMapper().readValues(target, HashMap.class);*/
+
+	            ObjectMapper mapper = new ObjectMapper();
+	            finalmap = mapper.readValue(target.toString(),
+	                    new TypeReference<HashMap<String, Object>>() {
+	                    });
+	            System.out.println("FinalMap : "+finalmap);
+	            Index update = new Index.Builder(finalmap).index(indexNameandType[0]).type(indexNameandType[1]).id("71fa9567-14b5-461d-9ef7-b1cbde1b877a").build();
+	            
+	            JestResult result = jestClient.execute(update);
+
+	            System.out.println("result :"+result.getJsonString());
+	            if (result.isSucceeded() && StringUtils.isBlank(result.getErrorMessage())) {
+	                updateStatus = true;
+	            }
+
+	        } catch (Throwable e) {
+	            System.out.println("Error :"+e);
+	        }
+	        return updateStatus;
+	    }
+    
+    public static JSONObject mergeJSONObjects(JSONObject json1, JSONObject json2) {
+        JSONObject mergedJSON = new JSONObject();
+        try {
+            mergedJSON = new JSONObject(json1, JSONObject.getNames(json1));
+            for (String crunchifyKey : JSONObject.getNames(json2)) {
+                mergedJSON.put(crunchifyKey, json2.get(crunchifyKey));
+            }
+
+        } catch (JSONException e) {
+            throw new RuntimeException("JSON Exception" + e);
+        }
+        System.out.println("mergeJSONObjects : "+mergedJSON);
+        
+        return mergedJSON;
+    }
+    
+    /**
+     * Merge "source" into "target". If fields have equal name, merge them recursively.
+     * @return the merged object (target).
+     */
+    public static JSONObject deepMerge(JSONObject source, JSONObject target) throws JSONException {
+        for (String key: JSONObject.getNames(source)) {
+                Object value = source.get(key);
+                if (!target.has(key)) {
+                    // new value for "key":
+                    target.put(key, value);
+                } else {
+                    // existing value for "key" - recursively deep merge:
+                    if (value instanceof JSONObject) {
+                        JSONObject valueJson = (JSONObject)value;
+                        deepMerge(valueJson, target.getJSONObject(key));
+                    } else {
+                        target.put(key, value);
+                    }
+                }
+        }
+        return target;
+    }
     
     
+    @SuppressWarnings("unchecked")
+    public static boolean updateWithTwoMaps() {
+
+
+        Map<String, Object> orginalData = new HashMap<String, Object>();
+        boolean updateStatus = false;
+        // Map<String, Object> newData = staticMapWithValue();
+        Map<String, Object> newData = staticTempMap();
+        System.out.println("newData : " + newData.toString());
+        try {
+
+            Get get = new Get.Builder(indexNameandType[0], "71fa9567-14b5-461d-9ef7-b1cbde1b877a").type(indexNameandType[1]).build();
+            JestResult getresult = jestClient.execute(get);
+            if (getresult.isSucceeded()) {
+                System.out.println("result :" + getresult.getJsonString());
+            }
+
+
+            orginalData = (Map<String, Object>) getresult.getValue("_source");
+            System.out.println("updateData : " + orginalData.toString());
+
+            orginalData = deepMerge(orginalData, newData);
+
+            System.out.println("FinalMap : " + orginalData);
+            Index update =
+                    new Index.Builder(orginalData).index(indexNameandType[0]).type(indexNameandType[1])
+                            .id("71fa9567-14b5-461d-9ef7-b1cbde1b877a").build();
+
+            JestResult result = jestClient.execute(update);
+
+            System.out.println("result :" + result.getJsonString());
+            if (result.isSucceeded() && StringUtils.isBlank(result.getErrorMessage())) {
+                updateStatus = true;
+            }
+
+        } catch (Throwable e) {
+            System.out.println("Error :" + e);
+        }
+        return updateStatus;
+    }
+    
+    /**
+     * Merge "newMap" into "original". If fields have equal name, merge them recursively.
+     * @return the merged Map (original).
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> deepMerge(Map<String, Object> original, Map<String, Object> newMap) {
+        for (String key : newMap.keySet()) {
+            if (newMap.get(key) instanceof Map && original.get(key) instanceof Map) {
+                Map<String, Object> originalChild = (Map<String, Object>) original.get(key);
+                Map<String, Object> newChild = (Map<String, Object>) newMap.get(key);
+                original.put(key, deepMerge(originalChild, newChild));
+            } else {
+                original.put(key, newMap.get(key));
+            }
+        }
+        return original;
+    }
 }
 

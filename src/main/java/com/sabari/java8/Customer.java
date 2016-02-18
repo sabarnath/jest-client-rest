@@ -1,4 +1,4 @@
-package com.tryout.jest;
+package com.sabari.java8;
 
 public class Customer {
 private CustomerId customerId;

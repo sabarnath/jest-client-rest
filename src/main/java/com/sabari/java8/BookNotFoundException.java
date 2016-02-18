@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.tryout.jest;
+package com.sabari.java8;
 
 /**
  * @author smi-user

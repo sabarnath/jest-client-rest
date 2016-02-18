@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -34,14 +33,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.gson.Gson;
-import com.tryout.jest.domain.Note;
 
 public class RunMeLocalES {
     private static final Logger LOGGER = LoggerFactory.getLogger(RunMeLocalES.class);
@@ -530,10 +523,10 @@ public class RunMeLocalES {
                 .addIndex(DIARY_INDEX_NAME).addType(NOTES_TYPE_NAME).build();
         System.out.println(searchSourceBuilder.toString());
         JestResult result = jestClient.execute(search);
-        List<Note> notes = result.getSourceAsObjectList(Note.class);
+        /*List<Note> notes = result.getSourceAsObjectList(Note.class);
         for (Note note : notes) {
             System.out.println(note);
-        }
+        }*/
     }
 
     private static void deleteTestIndex(final JestClient jestClient)
